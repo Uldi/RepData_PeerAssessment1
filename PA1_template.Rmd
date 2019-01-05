@@ -89,19 +89,23 @@ The total daily number of steps increase because the NA values were replaced wit
 
 Add a factor variable for weekend and weekdays, subset the activities and calculate mean step values by interval
 ```{r}
-imputed <- mutate(imputed,wd = ifelse(weekdays(date) %in% c("Saturdy", "Sunday"), "weekend", "weekday"))
-imputed$wd <- as.factor(imputed$wd)
-
-weekdayActivities <- subset(imputed,wd=="weekday")
-weekendActivities <- subset(imputed,wd=="weekend")
-
-meanWeekdaySteps <- with(weekdayActivities, tapply(steps, interval, mean))
-meanWeekendSteps <- with(weekendActivities, tapply(steps, interval, mean))
+dow <- function(date) {
+    if (weekdays(date) %in% c("Saturdy", "Sunday")) {
+        "weekend"
+    } else {
+        "weekday"
+    }
+}
+imputed$dow <- as.factor(sapply(imputed$date, dow))
 ```
 
 Generate plots for weekdays and weekends:
-```{r, fig.height=7}
-par(mfrow=c(2,1), mar=c(4,4,2,3))
-plot(unique(activity$interval), meanWeekdaySteps, type="l", xlab = "interval", ylab="mean steps across weekdays")
-plot(unique(activity$interval), meanWeekendSteps, type="l", xlab = "interval", ylab="mean steps across weekends")
+```{r}
+library(lattice)
+meanSteps <- aggregate(steps ~ interval + dow, data=imputed, FUN=mean)
+
+xyplot(steps ~ interval | dow, data=meanSteps, type="l",
+       layout = c(1, 2), 
+       xlab = "Time window (5 min.)", 
+       ylab = "Steps (mean)")
 ```
